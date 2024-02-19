@@ -1,0 +1,5 @@
+Copy your downloaded model files ".gguf" files to this folder.
+
+
+
+**Added this .txt file so that this folder will be added to the repo, otherwise it is getting ignored.
