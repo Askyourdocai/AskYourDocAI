@@ -1,0 +1,31 @@
+repos:
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 23.12.1
+    hooks:
+      - id: black
+  - repo: local
+    hooks:
+    - id: pylint
+      name: pylint
+      entry: pylint
+      language: system
+      types: [python]
+      args:
+        - --max-line-length=120
+        - --ignore-imports=yes
+        - -d duplicate-code
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.991  # Use the sha / tag you want to point at
+    hooks:
+     - id: mypy
+  - repo: https://github.com/sqlalchemyorg/zimports/
+    rev: v0.4.5
+    hooks:
+     - id: zimports
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.1.13
+    hooks:
+     - id: ruff
+       args: [ --fix ]
+     - id: ruff-format
