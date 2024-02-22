@@ -1,4 +1,4 @@
-"""This script is used to retrieve relevant documents from a given pdf and query."""
+"""This script is used to retrieve relevant documents from a given pdf and query using chromadb."""
 
 import os
 import re
@@ -12,9 +12,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.text_splitter import SentenceTransformersTokenTextSplitter
 
 
-class RetrieveRelevantDocs:
+class RetrieveRelevantDocsChromaDB:
     """
-    A class for retrieving relevant documents from a given text.
+    A class for retrieving relevant documents from a given text using chromadb.
 
     Attributes:
 
@@ -23,7 +23,7 @@ class RetrieveRelevantDocs:
 
     Examples:
         >>> pdf_path = "path/to/pdf/file"
-        >>> rrds = RetrieveRelevantDocs(pdf_path)
+        >>> rrds = RetrieveRelevantDocsChromaDB(pdf_path)
         >>> query = "What is the telephone number?"
         >>> retrieved_documents = rrds.get_relevant_docs(query, n_results=2)
         >>> print("Query------------------:", query)
