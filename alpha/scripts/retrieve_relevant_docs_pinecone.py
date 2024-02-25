@@ -2,12 +2,17 @@
 
 import os
 import re
+import time
 
-from create_pinecone_index import PineconeIndex
 from data_extractor import DataExtractor
+from dotenv import load_dotenv
 from langchain.schema.document import Document
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_pinecone import Pinecone
+from langchain_pinecone import PineconeVectorStore
+from pinecone import Pinecone
+from pinecone import ServerlessSpec
+
+load_dotenv()
 
 
 class RetrieveRelevantDocsPinecone:
@@ -44,6 +49,9 @@ class RetrieveRelevantDocsPinecone:
         self.embeddings = HuggingFaceEmbeddings()
         # Store the index name
         self.index_name = None
+        # Initialize the Pinecone object
+        api_key = os.getenv("PINECONE_API_KEY")
+        self.pc = Pinecone(api_key=api_key)
 
     def _generate_index_name(self):
         """
@@ -57,6 +65,30 @@ class RetrieveRelevantDocsPinecone:
         valid_name = re.sub(r"[^a-zA-Z]", "", base_name.split(".")[0]).lower()
         index_name = valid_name[:7]
         return index_name
+
+    def _check_index_exists(self):
+        """
+        Checks if the index exists.
+
+        Returns:
+            bool: True if the index exists, False otherwise.
+        """
+        return self.index_name in self.pc.list_indexes().names()
+
+    def _create_index(self, index_name: str):
+        """
+        Creates a Pinecone index.
+
+        Returns:
+            Pinecone: The Pinecone object.
+        """
+        spec = ServerlessSpec(cloud="aws", region="us-west-2")
+        self.pc.create_index(index_name, dimension=768, metric="cosine", spec=spec)
+        print(self.pc.describe_index(index_name).status["ready"])
+        while not self.pc.describe_index(index_name).status["ready"]:
+            print("Waiting for index to be ready...")
+            time.sleep(2)
+        print("Index created successfully!")
 
     def _chunk_text_by_tokens(self, text: str, tokens_per_chunk: int = 1000):
         """
@@ -119,6 +151,11 @@ class RetrieveRelevantDocsPinecone:
             documents.append(document)
         return documents
 
+    def _wait_for_documents_to_index(self):
+        # Implement a heuristic waiting mechanism
+        print("Waiting for documents to be indexed...")
+        time.sleep(10)
+
     def upsert_documents(self):
         """
         Upserts the documents into the Pinecone index.
@@ -129,21 +166,22 @@ class RetrieveRelevantDocsPinecone:
         if self.index_name is None:
             self.index_name = self._generate_index_name()
 
-        pinecone_index = PineconeIndex(self.index_name)
-        docsearch = None
+        print("Checking if index exists...", self._check_index_exists())
 
-        if pinecone_index.check_index_exists():
-            docsearch = Pinecone.from_existing_index(self.index_name, self.embeddings)
-        else:
-            pinecone_index.create_index()
-            documents = self._load_string_documents()
-            docsearch = Pinecone.from_documents(
-                documents, self.embeddings, index_name=self.index_name
+        if self._check_index_exists():
+            docsearch = PineconeVectorStore.from_existing_index(
+                self.index_name, self.embeddings
             )
-
+            return docsearch
+        self._create_index(self.index_name)
+        documents = self._load_string_documents()
+        docsearch = PineconeVectorStore.from_documents(
+            documents, self.embeddings, index_name=self.index_name
+        )
+        self._wait_for_documents_to_index()
         return docsearch
 
-    def get_relevant_docs(self, query: str):
+    def get_relevant_docs(self, query: str, n_results: int = 2):
         """
         Returns a list of relevant documents.
 
@@ -154,5 +192,9 @@ class RetrieveRelevantDocsPinecone:
             list: A list of relevant documents.
         """
         docsearch = self.upsert_documents()
-        results = docsearch.similarity_search(query)
-        return results[0].page_content
+        results = docsearch.similarity_search(query, k=n_results)
+        reldocs = []
+        for doc in results:
+            reldocs.append(doc.page_content)
+
+        return [reldocs]
