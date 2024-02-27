@@ -1,3 +1,6 @@
 # AskYourDocAI 🤖
 ### A'I' can answer anything about your doc.
-![alt text](AskYourDocAI.webp)
+![alt text](AskYourDocAI.jpeg)
+
+### Present UI
+[Watch the video here](Screen Recording 2024-02-27 at 20.31.08.mov)
