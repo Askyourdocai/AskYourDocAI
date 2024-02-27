@@ -2,7 +2,5 @@
 ### A'I' can answer anything about your doc.
 ![alt text](AskYourDocAI.jpeg)
 
-### Present UI
-![Watch the video here](presentUI.gif)
+https://github.com/Askyourdocai/AskYourDocAI/assets/160503993/d2cf614e-e92b-4df9-b4df-cabe97a95637
 
-<video controls src="PresentUI.mp4" title="Title"></video>
