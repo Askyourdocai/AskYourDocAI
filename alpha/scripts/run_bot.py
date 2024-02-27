@@ -7,6 +7,7 @@ from ask_llm import AskGPT3
 from retrieve_relevant_docs import RetrieveRelevantDocsBase
 from retrieve_relevant_docs import RetrieveRelevantDocsChromaDB
 from retrieve_relevant_docs import RetrieveRelevantDocsPinecone
+from retrieve_relevant_docs import RetrieveRelevantDocsQdrant
 import streamlit as st
 
 
@@ -56,9 +57,12 @@ st.title("Ask Your Doc AI 🤖")
 pdf_file = st.file_uploader("Upload your PDF file", type=["pdf"])
 if pdf_file is not None:
     with st.spinner("Uploading file..."):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
-            tmpfile.write(pdf_file.getvalue())
-            pdf_path = tmpfile.name
+        # Create the temporary file only if 'pdf_path' doesn't exist in the session state
+        if "pdf_path" not in st.session_state:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
+                tmpfile.write(pdf_file.getvalue())
+                # Save the path to the temporary file in the session state
+                st.session_state.pdf_path = tmpfile.name
 
 # LLM Model Selection in the sidebar
 llm_model = st.sidebar.selectbox(
@@ -82,15 +86,19 @@ ask_llm = st.session_state.ask_llm
 
 # RAG VectorDB Selection in the sidebar
 rag_vectordb = st.sidebar.selectbox(
-    "Which RAG VectorDB do you want to use?", ("ChromaDB", "Pinecone")
+    "Which RAG VectorDB do you want to use?", ("ChromaDB", "Pinecone", "Qdrant")
 )
 
 # Initialize relevant document retrieval system based on the RAG VectorDB selection
 if pdf_file is not None:
     if rag_vectordb == "Pinecone":
-        rrds: RetrieveRelevantDocsBase = RetrieveRelevantDocsPinecone(pdf_path)
-    else:
-        rrds = RetrieveRelevantDocsChromaDB(pdf_path)
+        rrds: RetrieveRelevantDocsBase = RetrieveRelevantDocsPinecone(
+            st.session_state.pdf_path
+        )
+    elif rag_vectordb == "ChromaDB":
+        rrds = RetrieveRelevantDocsChromaDB(st.session_state.pdf_path)
+    elif rag_vectordb == "Qdrant":
+        rrds = RetrieveRelevantDocsQdrant(st.session_state.pdf_path)
     st.success("File uploaded successfully!")
 
 # Initialize session state for chat history if it doesn't exist
